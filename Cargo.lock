@@ -114,7 +114,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 [[package]]
 name = "citro3d"
 version = "0.1.0"
-source = "git+https://github.com/Team-Yarg/citro3d-rs.git?branch=0x2a/feat/lighting#45a473ddd24cd5a17187ec6ff3209253611706df"
+source = "git+https://github.com/Team-Yarg/citro3d-rs.git#fef5bd03cfa5f554b9b65c81ad383af55ce85a31"
 dependencies = [
  "bitflags 1.3.2",
  "bytemuck",
@@ -123,13 +123,16 @@ dependencies = [
  "ctru-rs",
  "ctru-sys",
  "document-features",
+ "glam",
  "libc",
+ "static_assertions",
+ "thiserror",
 ]
 
 [[package]]
 name = "citro3d-macros"
 version = "0.1.0"
-source = "git+https://github.com/Team-Yarg/citro3d-rs.git?branch=0x2a/feat/lighting#45a473ddd24cd5a17187ec6ff3209253611706df"
+source = "git+https://github.com/Team-Yarg/citro3d-rs.git#fef5bd03cfa5f554b9b65c81ad383af55ce85a31"
 dependencies = [
  "litrs",
  "quote",
@@ -138,7 +141,7 @@ dependencies = [
 [[package]]
 name = "citro3d-sys"
 version = "0.1.0"
-source = "git+https://github.com/Team-Yarg/citro3d-rs.git?branch=0x2a/feat/lighting#45a473ddd24cd5a17187ec6ff3209253611706df"
+source = "git+https://github.com/Team-Yarg/citro3d-rs.git#fef5bd03cfa5f554b9b65c81ad383af55ce85a31"
 dependencies = [
  "bindgen 0.68.1",
  "cc",
@@ -167,14 +170,13 @@ checksum = "a3c6565524986fe3225da0beb9b4aa55ebc73cd57ff8cb4ccf016ca4c8d006af"
 [[package]]
 name = "ctru-rs"
 version = "0.7.1"
-source = "git+https://github.com/Jhynjhiruu/ctru-rs?branch=feature/uds#5eda3916ba0b5d79da8130d2b2a484aadf05b6d4"
+source = "git+https://github.com/rust3ds/ctru-rs#947c3f4c5ee569a4c543c37cb0d7050f53cc6983"
 dependencies = [
  "bitflags 2.4.2",
  "cfg-if",
  "const-zero",
  "ctru-sys",
  "libc",
- "macaddr",
  "pthread-3ds",
  "shim-3ds",
  "toml",
@@ -183,7 +185,7 @@ dependencies = [
 [[package]]
 name = "ctru-sys"
 version = "0.5.0"
-source = "git+https://github.com/Jhynjhiruu/ctru-rs?branch=feature/uds#5eda3916ba0b5d79da8130d2b2a484aadf05b6d4"
+source = "git+https://github.com/rust3ds/ctru-rs#947c3f4c5ee569a4c543c37cb0d7050f53cc6983"
 dependencies = [
  "bindgen 0.65.1",
  "cc",
@@ -226,6 +228,12 @@ dependencies = [
  "libc",
  "windows-sys 0.52.0",
 ]
+
+[[package]]
+name = "glam"
+version = "0.24.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5418c17512bdf42730f9032c74e1ae39afc408745ebb2acf72fbc4691c17945"
 
 [[package]]
 name = "glob"
@@ -298,9 +306,9 @@ name = "lighting"
 version = "0.1.0"
 dependencies = [
  "citro3d",
- "citro3d-sys",
  "ctru-rs",
  "ctru-sys",
+ "glam",
  "include_texture_macro",
  "libm",
  "vert_attr",
@@ -323,12 +331,6 @@ name = "log"
 version = "0.4.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5e6163cb8c49088c2c36f57875e58ccd8c87c7427f7fbd50ea6710b2f3f2e8f"
-
-[[package]]
-name = "macaddr"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "baee0bbc17ce759db233beb01648088061bf678383130602a298e6998eedb2d8"
 
 [[package]]
 name = "memchr"
@@ -573,6 +575,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "thiserror"
+version = "1.0.57"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e45bcbe8ed29775f228095caf2cd67af7a4ccf756ebff23a306bf3e8b47b24b"
+dependencies = [
+ "thiserror-impl",
+]
+
+[[package]]
+name = "thiserror-impl"
+version = "1.0.57"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a953cb265bef375dae3de6663da4d3804eee9682ea80d8e2542529b73c531c81"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "toml"
 version = "0.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -598,6 +620,7 @@ name = "vert_attr"
 version = "0.1.0"
 dependencies = [
  "citro3d",
+ "glam",
  "vert_attr_macro",
 ]
 

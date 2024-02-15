@@ -5,11 +5,11 @@ use crate::asset_server::{retrieve_asset, AssetKey};
 use crate::Uniforms;
 
 use super::colour::Colour;
-//use super::texture::GPUTexture;
+use super::texture::GPUTexture;
 
 #[derive(Debug)]
 pub struct Material {
-    //texture: Option<AssetKey<GPUTexture>>,
+    texture: Option<AssetKey<GPUTexture>>,
     ambient: Option<AssetKey<Colour>>,
     diffuse: Option<AssetKey<Colour>>,
     specular0: Option<AssetKey<Colour>>,
@@ -19,7 +19,7 @@ pub struct Material {
 
 impl Material {
     pub fn new(
-        //texture: Option<AssetKey<GPUTexture>>,
+        texture: Option<AssetKey<GPUTexture>>,
         ambient: Option<AssetKey<Colour>>,
         diffuse: Option<AssetKey<Colour>>,
         specular0: Option<AssetKey<Colour>>,
@@ -27,7 +27,7 @@ impl Material {
         emission: Option<AssetKey<Colour>>,
     ) -> Self {
         Self {
-            //texture,
+            texture,
             ambient,
             diffuse,
             specular0,
@@ -36,13 +36,13 @@ impl Material {
         }
     }
 
-    /*pub fn get_texture(&self) -> Option<&AssetKey<GPUTexture>> {
-        if let Some(tex) = &self.texture {
-            Some(tex)
+    pub fn get_texture(&self) -> Option<&GPUTexture> {
+        if let Some(key) = &self.texture {
+            Some(retrieve_asset(key))
         } else {
             None
         }
-    }*/
+    }
 
     pub fn set_light_env(&self, gpu: &mut Instance, _uniforms: &Uniforms) {
         let to_material_colour = |col: &AssetKey<Colour>| retrieve_asset(col).into();

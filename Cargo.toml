@@ -6,13 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-citro3d = { git = "https://github.com/Team-Yarg/citro3d-rs.git", branch = "0x2a/feat/lighting" }
-citro3d-sys = { git = "https://github.com/Team-Yarg/citro3d-rs.git", branch = "0x2a/feat/lighting" }
-ctru-rs = { git = "https://github.com/Jhynjhiruu/ctru-rs", branch = "feature/uds" }
-ctru-sys = { git = "https://github.com/Jhynjhiruu/ctru-rs", branch = "feature/uds" }
+citro3d = { git = "https://github.com/Team-Yarg/citro3d-rs.git" }
+ctru-rs = { git = "https://github.com/rust3ds/ctru-rs" }
+ctru-sys = { git = "https://github.com/rust3ds/ctru-rs" }
 vert_attr = { path = "vert_attr" }
 include_texture_macro = { path = "include_texture_macro" }
 libm = "0.2.8"
+glam = "0.24.1"
 
 [package.metadata.cargo-3ds]
 romfs_dir = "romfs"

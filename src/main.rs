@@ -6,34 +6,31 @@ use std::f32::consts::{FRAC_PI_2 as FRAC_TAU_4, TAU};
 use std::mem::MaybeUninit;
 use std::sync::Arc;
 
-use asset_server::add_asset;
 use citro3d::buffer::Primitive;
 use citro3d::light::{LightLutId, LutData, LutInput};
 use citro3d::macros::*;
 use citro3d::material::Color;
-use citro3d::math::{
-    AspectRatio, ClipPlanes, FVec3, FVec4, Matrix4, Projection, StereoDisplacement,
-};
+use citro3d::math::{AspectRatio, ClipPlanes, Projection, StereoDisplacement};
 use citro3d::render::{ClearFlags, DepthFormat, Target};
 use citro3d::shader::{Library, Program};
 use citro3d::uniform::Index;
 use citro3d::Instance;
-use citro3d_sys::C3D_LightEnvInit;
 use ctru::prelude::*;
 use ctru::services::gfx::{RawFrameBuffer, Screen, TopScreen3D};
 
+use glam::{Mat4, Quat, Vec2, Vec3};
+
 use include_texture_macro::include_texture;
-use model::colour::Colour;
-use model::material::Material;
-//use model::texture::{GPUTexture, Texture};
 use vert_attr::VertAttrBuilder;
 
 mod asset_server;
-mod maths;
 mod model;
 
-use maths::*;
+use asset_server::add_asset;
+use model::colour::Colour;
+use model::material::Material;
 use model::shape::Shape;
+use model::texture::Texture;
 use model::Model;
 
 const DEADZONE: f32 = 0.01;
@@ -122,28 +119,28 @@ fn main() {
         material_specular: spe_uniform,
     };
 
-    gpu.bind_program(&vert_prog);
+    gpu.bind_program(vert_prog);
 
     let light_env = gpu.light_env_mut();
 
     let light = light_env.create_light().unwrap();
     let light = light_env.light_mut(light).unwrap();
     light.set_color(1.0, 1.0, 1.0);
-    light.set_position(FVec4::new(0.0, 0.0, -0.5, 1.0));
+    light.set_position(Vec3::new(0.0, 0.0, -0.5).into());
 
     let mut cam_pos = Vec3::new(0.0, 0.0, 0.0);
 
     // yaw, pitch, roll
     let mut cam_rot = Vec3::new(0.0, 0.0, 0.0);
 
-    /*let peach = Texture::new(64, 64, PEACH.to_vec());
+    let peach = Texture::new(64, 64, PEACH.to_vec());
     let bowser = Texture::new(64, 64, BOWSER.to_vec());
 
     let gpu_peach = (&peach).into();
     let gpu_bowser = (&bowser).into();
 
     let peach_key = add_asset("peach_tex", gpu_peach);
-    let bowser_key = add_asset("bowser_tex", gpu_bowser);*/
+    let bowser_key = add_asset("bowser_tex", gpu_bowser);
 
     let ambient = Colour::new(51, 51, 51, 255);
     let ambient = add_asset("ambient", ambient);
@@ -161,18 +158,20 @@ fn main() {
     let blue = add_asset("blue", blue);
 
     let peach_mat = Material::new(
-        /*Some(peach_key), */ Some(ambient),
+        Some(peach_key),
+        Some(ambient),
         Some(diffuse),
         Some(specular),
         None,
-        Some(red),
+        None,
     );
     let bowser_mat = Material::new(
-        /*Some(bowser_key), */ Some(ambient),
+        Some(bowser_key),
+        Some(ambient),
         Some(diffuse),
         Some(specular),
         None,
-        Some(blue),
+        None,
     );
 
     let peach_mat_key = add_asset("peach_mat", peach_mat);
@@ -292,30 +291,15 @@ fn main() {
         }
 
         gpu.render_frame_with(|inst| {
-            let up_vec = FVec3::new(0.0, 1.0, 0.0);
+            let scale = Vec3::new(1.0, 1.0, 1.0);
 
-            let mut camera_matrix = Matrix4::identity();
+            let rotation = Quat::from_axis_angle(Vec3::Y, -cam_rot.x)
+                * Quat::from_axis_angle(Vec3::X, cam_rot.y);
 
-            camera_matrix.rotate(up_vec, cam_rot.x);
-            camera_matrix.rotate(
-                {
-                    let forward = camera_matrix.as_rows()[2];
-                    FVec3::new(forward[3], forward[2], forward[1])
-                }
-                .cross(up_vec),
-                cam_rot.y,
-            );
-            camera_matrix.rotate(
-                {
-                    let forward = camera_matrix.as_rows()[2];
-                    FVec3::new(forward[3], forward[2], forward[1])
-                },
-                cam_rot.z,
-            );
+            let camera_matrix =
+                Mat4::from_scale_rotation_translation(scale, -rotation, -cam_pos).inverse();
 
-            camera_matrix.translate(cam_pos.x, cam_pos.y, cam_pos.z);
-
-            inst.bind_vertex_uniform(uniforms.camera_matrix, &camera_matrix);
+            inst.bind_vertex_uniform(uniforms.camera_matrix, camera_matrix);
 
             let mut render_to = |target: &mut Target, projection| {
                 target.clear(ClearFlags::ALL, 0xFF00FFFF, 0);
@@ -332,17 +316,17 @@ fn main() {
                 ..
             } = calculate_projections();
 
-            render_to(&mut top_left_target, &left_eye);
-            render_to(&mut top_right_target, &right_eye);
+            render_to(&mut top_left_target, left_eye);
+            render_to(&mut top_right_target, right_eye);
         })
     }
 }
 
 #[derive(Debug)]
 struct Projections {
-    left_eye: Matrix4,
-    right_eye: Matrix4,
-    center: Matrix4,
+    left_eye: Mat4,
+    right_eye: Mat4,
+    center: Mat4,
 }
 
 fn calculate_projections() -> Projections {
@@ -365,12 +349,12 @@ fn calculate_projections() -> Projections {
         Projection::perspective(vertical_fov, AspectRatio::TopScreen, clip_planes)
             .stereo_matrices(left, right);
 
-    let center =
+    let center: citro3d::math::Matrix4 =
         Projection::perspective(vertical_fov, AspectRatio::BottomScreen, clip_planes).into();
 
     Projections {
-        left_eye,
-        right_eye,
-        center,
+        left_eye: left_eye.into(),
+        right_eye: right_eye.into(),
+        center: center.into(),
     }
 }

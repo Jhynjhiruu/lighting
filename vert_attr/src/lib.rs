@@ -1,5 +1,5 @@
 use citro3d::attrib::Format::*;
-use citro3d::math::*;
+use glam::{Vec2, Vec3, Vec4};
 pub use vert_attr_macro::*;
 
 pub trait VertAttrs {
@@ -20,9 +20,10 @@ macro_rules! impl_vertattrs {
     };
 }
 
-impl_vertattrs!(FVec4: Float, 4);
-impl_vertattrs!(FVec3: Float, 4); // not a typo!
-impl_vertattrs!(IVec: UnsignedByte, 4);
+impl_vertattrs!(Vec4: Float, 4);
+impl_vertattrs!(Vec3: Float, 3);
+impl_vertattrs!(Vec2: Float, 2);
+//impl_vertattrs!(IVec: UnsignedByte, 4);
 
 impl_vertattrs!(f32: Float, 1);
 
