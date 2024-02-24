@@ -6,9 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-citro3d = { git = "https://github.com/Team-Yarg/citro3d-rs.git" }
-ctru-rs = { git = "https://github.com/rust3ds/ctru-rs" }
-ctru-sys = { git = "https://github.com/rust3ds/ctru-rs" }
+citro3d = { path = "D:/GitHub/citro3d-rs/citro3d" }
+ctru-rs = { git = "https://github.com/Jhynjhiruu/ctru-rs", branch = "feature/uds" }
+ctru-sys = { git = "https://github.com/Jhynjhiruu/ctru-rs", branch = "feature/uds" }
 vert_attr = { path = "vert_attr" }
 include_texture_macro = { path = "include_texture_macro" }
 libm = "0.2.8"

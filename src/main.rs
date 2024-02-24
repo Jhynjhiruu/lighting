@@ -3,16 +3,14 @@
 #![feature(downcast_unchecked)]
 
 use std::f32::consts::{FRAC_PI_2 as FRAC_TAU_4, TAU};
-use std::mem::MaybeUninit;
 use std::sync::Arc;
 
 use citro3d::buffer::Primitive;
-use citro3d::light::{LightLutId, LutData, LutInput};
 use citro3d::macros::*;
-use citro3d::material::Color;
 use citro3d::math::{AspectRatio, ClipPlanes, Projection, StereoDisplacement};
 use citro3d::render::{ClearFlags, DepthFormat, Target};
 use citro3d::shader::{Library, Program};
+use citro3d::texture::TextureFilterParam;
 use citro3d::uniform::Index;
 use citro3d::Instance;
 use ctru::prelude::*;
@@ -39,17 +37,14 @@ const CIRCLE_DEADZONE: f32 = 15.0;
 const SHADER: &[u8] = include_shader!("../shader.pica");
 
 const BOWSER: &[u8] = include_texture!("../bowser.png");
-const PEACH: &[u8] = include_texture!("../peach.png");
+const PEACH: &[u8] = include_texture!("../diffuse.png");
+
+const NORMAL: &[u8] = include_texture!("../normal.png");
 
 pub struct Uniforms {
     pub model_matrix: Index,
     pub camera_matrix: Index,
     pub projection_matrix: Index,
-    pub light_colour: Index,
-    pub material_emission: Index,
-    pub material_ambient: Index,
-    pub material_diffuse: Index,
-    pub material_specular: Index,
 }
 
 #[derive(VertAttrBuilder, Clone, Debug)]
@@ -58,6 +53,7 @@ struct Vert {
     pos: Vec3,
     tex: Vec2,
     norm: Vec3,
+    tan: Vec3,
 }
 
 fn main() {
@@ -101,40 +97,40 @@ fn main() {
     let cam_uniform = vert_prog.get_uniform("camMtx").unwrap();
     let proj_uniform = vert_prog.get_uniform("projMtx").unwrap();
 
-    let light_uniform = vert_prog.get_uniform("lightClr").unwrap();
-
-    let emi_uniform = vert_prog.get_uniform("mat_emi").unwrap();
-    let amb_uniform = vert_prog.get_uniform("mat_amb").unwrap();
-    let dif_uniform = vert_prog.get_uniform("mat_dif").unwrap();
-    let spe_uniform = vert_prog.get_uniform("mat_spe").unwrap();
-
     let uniforms = Uniforms {
         model_matrix: model_uniform,
         camera_matrix: cam_uniform,
         projection_matrix: proj_uniform,
-        light_colour: light_uniform,
-        material_emission: emi_uniform,
-        material_ambient: amb_uniform,
-        material_diffuse: dif_uniform,
-        material_specular: spe_uniform,
     };
 
     gpu.bind_program(vert_prog);
 
-    let light_env = gpu.light_env_mut();
+    let mut light_env = gpu.light_env_mut();
 
-    let light = light_env.create_light().unwrap();
-    let light = light_env.light_mut(light).unwrap();
-    light.set_color(1.0, 1.0, 1.0);
-    light.set_position(Vec3::new(0.0, 0.0, -0.5).into());
+    let light_index = light_env.as_mut().create_light().unwrap();
+    let mut light = light_env.as_mut().light_mut(light_index).unwrap();
+    let light_pos = Vec3::new(0.0, 0.0, -0.5);
+    light.as_mut().set_color(1.0, 1.0, 1.0);
 
     let mut cam_pos = Vec3::new(0.0, 0.0, 0.0);
 
     // yaw, pitch, roll
     let mut cam_rot = Vec3::new(0.0, 0.0, 0.0);
 
-    let peach = Texture::new(64, 64, PEACH.to_vec());
-    let bowser = Texture::new(64, 64, BOWSER.to_vec());
+    let peach = Texture::new(
+        128,
+        128,
+        PEACH.to_vec(),
+        TextureFilterParam::Linear,
+        TextureFilterParam::Nearest,
+    );
+    let bowser = Texture::new(
+        64,
+        64,
+        BOWSER.to_vec(),
+        TextureFilterParam::Linear,
+        TextureFilterParam::Nearest,
+    );
 
     let gpu_peach = (&peach).into();
     let gpu_bowser = (&bowser).into();
@@ -142,13 +138,17 @@ fn main() {
     let peach_key = add_asset("peach_tex", gpu_peach);
     let bowser_key = add_asset("bowser_tex", gpu_bowser);
 
-    let ambient = Colour::new(51, 51, 51, 255);
-    let ambient = add_asset("ambient", ambient);
+    let normal = Texture::new(
+        128,
+        128,
+        NORMAL.to_vec(),
+        TextureFilterParam::Linear,
+        TextureFilterParam::Nearest,
+    );
+    let gpu_normal = (&normal).into();
+    let normal_key = add_asset("normal_tex", gpu_normal);
 
-    let diffuse = Colour::new(102, 102, 102, 255);
-    let diffuse = add_asset("diffuse", diffuse);
-
-    let specular = Colour::new(204, 204, 204, 255);
+    let specular = Colour::new(255, 255, 255, 255);
     let specular = add_asset("specular", specular);
 
     let red = Colour::new(255, 0, 0, 255);
@@ -157,21 +157,34 @@ fn main() {
     let blue = Colour::new(0, 0, 255, 255);
     let blue = add_asset("blue", blue);
 
+    let ambient = Colour::new(127, 127, 127, 255);
+    let ambient = add_asset("ambient", ambient);
+
+    let diffuse_red = Colour::new(102, 0, 0, 255);
+    let diffuse_red = add_asset("diffuse_red", diffuse_red);
+
+    let diffuse_blue = Colour::new(0, 0, 102, 255);
+    let diffuse_blue = add_asset("diffuse_blue", diffuse_blue);
+
     let peach_mat = Material::new(
         Some(peach_key),
+        Some(normal_key),
         Some(ambient),
-        Some(diffuse),
+        Some(diffuse_blue),
         Some(specular),
         None,
         None,
+        Some(100.0),
     );
     let bowser_mat = Material::new(
         Some(bowser_key),
+        Some(normal_key),
         Some(ambient),
-        Some(diffuse),
+        Some(diffuse_red),
         Some(specular),
         None,
-        None,
+        Some(red),
+        Some(100.0),
     );
 
     let peach_mat_key = add_asset("peach_mat", peach_mat);
@@ -185,21 +198,25 @@ fn main() {
                 pos: Vec3::new(-0.5, 0.5, -0.5),
                 tex: Vec2::new(0.0, 1.0),
                 norm: Vec3::new(0.0, 0.0, 1.0),
+                tan: Vec3::new(1.0, 0.0, 0.0),
             },
             Vert {
                 pos: Vec3::new(-0.5, -0.5, -0.5),
                 tex: Vec2::new(0.0, 0.0),
                 norm: Vec3::new(0.0, 0.0, 1.0),
+                tan: Vec3::new(1.0, 0.0, 0.0),
             },
             Vert {
                 pos: Vec3::new(0.5, -0.5, -0.5),
                 tex: Vec2::new(1.0, 0.0),
                 norm: Vec3::new(0.0, 0.0, 1.0),
+                tan: Vec3::new(1.0, 0.0, 0.0),
             },
             Vert {
                 pos: Vec3::new(0.5, 0.5, -0.5),
                 tex: Vec2::new(1.0, 1.0),
                 norm: Vec3::new(0.0, 0.0, 1.0),
+                tan: Vec3::new(1.0, 0.0, 0.0),
             },
         ],
     );
@@ -211,21 +228,25 @@ fn main() {
                 pos: Vec3::new(0.5, 0.5, -0.5),
                 tex: Vec2::new(1.0, 1.0),
                 norm: Vec3::new(0.0, 0.0, 1.0),
+                tan: Vec3::new(1.0, 0.0, 0.0),
             },
             Vert {
                 pos: Vec3::new(0.5, -0.5, -0.5),
                 tex: Vec2::new(1.0, 0.0),
                 norm: Vec3::new(0.0, 0.0, 1.0),
+                tan: Vec3::new(1.0, 0.0, 0.0),
             },
             Vert {
                 pos: Vec3::new(-0.5, -0.5, -0.5),
                 tex: Vec2::new(0.0, 0.0),
                 norm: Vec3::new(0.0, 0.0, 1.0),
+                tan: Vec3::new(1.0, 0.0, 0.0),
             },
             Vert {
                 pos: Vec3::new(-0.5, 0.5, -0.5),
                 tex: Vec2::new(0.0, 1.0),
                 norm: Vec3::new(0.0, 0.0, 1.0),
+                tan: Vec3::new(1.0, 0.0, 0.0),
             },
         ],
     );
@@ -300,6 +321,13 @@ fn main() {
                 Mat4::from_scale_rotation_translation(scale, -rotation, -cam_pos).inverse();
 
             inst.bind_vertex_uniform(uniforms.camera_matrix, camera_matrix);
+
+            let light_pos = camera_matrix.transform_point3(light_pos);
+
+            inst.light_env_mut()
+                .light_mut(light_index)
+                .unwrap()
+                .set_position(light_pos.into());
 
             let mut render_to = |target: &mut Target, projection| {
                 target.clear(ClearFlags::ALL, 0xFF00FFFF, 0);

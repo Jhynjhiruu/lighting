@@ -39,7 +39,9 @@ impl<T: VertAttrBuilder> Shape<T> {
     pub fn draw(&self, gpu: &mut Instance, uniforms: &Uniforms) {
         let mat = retrieve_asset(&self.mat);
         let tex = mat.get_texture();
-        mat.set_light_env(gpu, uniforms);
+        let norm = mat.get_normal();
+
+        mat.set_light_env(gpu, uniforms, tex.is_some() && norm.is_some());
 
         let stage0 = citro3d::texenv::Stage::new(0).unwrap();
         let stage1 = citro3d::texenv::Stage::new(1).unwrap();
@@ -47,43 +49,33 @@ impl<T: VertAttrBuilder> Shape<T> {
         if let Some(t) = tex {
             t.bind(0);
 
-            /*if mat.use_vertex_colours() {
-                gpu.texenv(stage0)
-                    .src(
-                        citro3d::texenv::Mode::BOTH,
-                        citro3d::texenv::Source::Texture0,
-                        Some(citro3d::texenv::Source::PrimaryColor),
-                        None,
-                    )
-                    .func(
-                        citro3d::texenv::Mode::BOTH,
-                        citro3d::texenv::CombineFunc::Add,
-                    );
-            } else {*/
             gpu.texenv(stage0)
                 .src(
                     citro3d::texenv::Mode::BOTH,
-                    citro3d::texenv::Source::FragmentPrimaryColor,
-                    Some(citro3d::texenv::Source::FragmentSecondaryColor),
+                    citro3d::texenv::Source::Texture0,
+                    Some(citro3d::texenv::Source::FragmentPrimaryColor),
                     None,
                 )
                 .func(
-                    citro3d::texenv::Mode::BOTH,
-                    citro3d::texenv::CombineFunc::Add,
+                    citro3d::texenv::Mode::RGB,
+                    citro3d::texenv::CombineFunc::Modulate,
                 );
 
             gpu.texenv(stage1)
                 .src(
                     citro3d::texenv::Mode::BOTH,
                     citro3d::texenv::Source::Previous,
-                    Some(citro3d::texenv::Source::Texture0),
+                    Some(citro3d::texenv::Source::FragmentSecondaryColor),
                     None,
                 )
                 .func(
-                    citro3d::texenv::Mode::BOTH,
-                    citro3d::texenv::CombineFunc::Modulate,
+                    citro3d::texenv::Mode::RGB,
+                    citro3d::texenv::CombineFunc::Add,
                 );
-            //}
+
+            if let Some(n) = norm {
+                n.bind(1);
+            }
         } else {
             let env = gpu.texenv(stage0);
             env.reset();

@@ -1,9 +1,11 @@
-use citro3d::texture::{Tex, TexParams};
+use citro3d::texture::{Tex, TexParams, TextureFilterParam};
 
 pub struct Texture {
     width: u16,
     height: u16,
     data: Vec<u8>,
+    mag_filter: TextureFilterParam,
+    min_filter: TextureFilterParam,
 }
 
 impl std::fmt::Debug for Texture {
@@ -16,11 +18,19 @@ impl std::fmt::Debug for Texture {
 }
 
 impl Texture {
-    pub fn new(width: u16, height: u16, data: Vec<u8>) -> Self {
+    pub fn new(
+        width: u16,
+        height: u16,
+        data: Vec<u8>,
+        mag_filter: TextureFilterParam,
+        min_filter: TextureFilterParam,
+    ) -> Self {
         Self {
             width,
             height,
             data,
+            mag_filter,
+            min_filter,
         }
     }
 }
@@ -33,6 +43,7 @@ pub struct GPUTexture {
 impl From<&Texture> for GPUTexture {
     fn from(value: &Texture) -> Self {
         let t = Tex::new(TexParams::new_2d(value.width, value.height)).unwrap();
+        t.set_filter(value.mag_filter, value.min_filter);
         t.upload(&value.data);
         Self { tex: t }
     }

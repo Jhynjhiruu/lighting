@@ -9,11 +9,19 @@ use self::passthrough::PassthroughHasherBuilder;
 
 type _AssetKey = u64;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct AssetKey<T> {
     key: _AssetKey,
     _marker: PhantomData<T>,
 }
+
+impl<T> Clone for AssetKey<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<T> Copy for AssetKey<T> {}
 
 struct AssetServer {
     map: HashMap<_AssetKey, Box<dyn Any>, PassthroughHasherBuilder>,

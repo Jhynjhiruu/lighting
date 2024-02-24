@@ -1,5 +1,5 @@
 use citro3d::Instance;
-use glam::{Mat4, Quat, Vec3};
+use glam::{Mat3, Mat4, Quat, Vec3};
 
 use crate::asset_server::{retrieve_asset, AssetKey};
 use crate::Uniforms;
@@ -32,7 +32,7 @@ impl<T: VertAttrBuilder + 'static> Model<T> {
             * Quat::from_rotation_z(self.rot.z);
 
         let transform =
-            Mat4::from_scale_rotation_translation(scale, -rotation, -self.pos).inverse();
+            Mat4::from_scale_rotation_translation(scale, rotation, self.pos);
 
         gpu.bind_vertex_uniform(uniforms.model_matrix, transform);
 
